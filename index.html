@@ -6,18 +6,90 @@
     <title>啊呜加密器</title>
     <link rel="stylesheet" href="./css/pico.min.css">
     <script>
+        let audioContext;
+        let audioBuffers = {};
+        let isPlaying = false;
+        let sources = [];
+
+        async function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                await Promise.all([
+                    loadAudio('a.mp3', '啊'),
+                    loadAudio('wu.mp3', '呜')
+                ]);
+            }
+        }
+
+        async function playAudio() {
+            if (isPlaying) return;
+            await initAudio();
+
+            const result = document.getElementById("encryption_result").value;
+            const sounds = [];
+
+            for (let i = 0; i < result.length; i++) {
+                if (result[i] === '啊' || result[i] === '呜') {
+                    sounds.push(audioBuffers[result[i]]);
+                }
+            }
+
+            if (sounds.length === 0) {
+                alert("加密结果中没有“啊”或“呜”，无法播放！");
+                return;
+            }
+
+            isPlaying = true;
+            let currentTime = audioContext.currentTime;
+            
+            sounds.forEach(buffer => {
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                sources.push(source);
+                source.start(currentTime);
+                currentTime += buffer.duration;
+            });
+
+            setTimeout(() => {
+                isPlaying = false;
+                console.log("播放完成");
+            }, (currentTime - audioContext.currentTime) * 1000);
+        }
+
+        function stopAudio() {
+            sources.forEach(source => {
+                source.stop();
+            });
+            sources = [];
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            isPlaying = false;
+        }
+
         function stringToSb(str) {
-            return Array.from(str).map(char => {
+            const result = Array.from(str).map(char => {
                 return char.charCodeAt(0).toString(2).padStart(16, '0');
             }).join('').replaceAll("0","啊").replaceAll("1","呜");
+
+            if (result.length > 0) {
+                document.getElementById("playButton").style.display = "inline-block";
+                document.getElementById("stopButton").style.display = "inline-block";
+            }
+            
+            return result;
         }
+
         function sbToString(binary) {
-            binary=binary.replace(/[^啊呜]/g, '').replaceAll("啊","0").replaceAll("呜","1");
+            binary = binary.replace(/[^啊呜]/g, '').replaceAll("啊","0").replaceAll("呜","1");
             let binaryArray = binary.match(/.{1,16}/g);
             return binaryArray.map(bin => {
                 return String.fromCharCode(parseInt(bin, 2));
             }).join('');
         }
+
         function copy(text) {
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -31,7 +103,6 @@
             }
             document.body.removeChild(textarea);
         }
-
     </script>
     <style>
         html,body{
@@ -53,6 +124,9 @@
         button{
             margin-bottom: 16px;
         }
+        #playButton, #stopButton {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -61,11 +135,6 @@
             <details open>
                 <summary role="button" class="outline">啊呜加密器-介绍</summary>
                 <p>啊呜加密器是一个简单的文本加密和解密工具。它将输入的文本转换为二进制编码，并用“啊”和“呜”两个字符替换二进制中的“0”和“1”。实现普通字符串和“啊”、“呜”二字组成的字符串的相互转换。程序在本地转换你的字符串，不会上传到服务器。</p>
-                <p>
-                    <span style="font-weight: bold;">
-                        声明：这个工具仅供娱乐，不适用于任何安全需求。
-                    </span>
-                </p>
             </details>
         </article>
         <div class="grid">
@@ -75,6 +144,8 @@
                 <button onclick="encryption_result.value=stringToSb(encryption.value)">加密</button>
                 <button onclick="copy(encryption_result.value);this.focus()">复制</button>
                 <textarea id="encryption_result" placeholder="加密结果"></textarea>
+                <button id="playButton" onclick="playAudio()">播放</button>
+                <button id="stopButton" onclick="stopAudio()">停止</button>
             </article>
             <article>
                 <h1>解密</h1>
