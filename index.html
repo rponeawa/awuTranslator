@@ -11,12 +11,19 @@
         let isPlaying = false;
         let sources = [];
 
+        async function loadAudio(url, key) {
+            const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            audioBuffers[key] = audioBuffer;
+        }
+
         async function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 await Promise.all([
-                    loadAudio('a.mp3', '啊'),
-                    loadAudio('wu.mp3', '呜')
+                    loadAudio('audio/a.wav', '啊'),
+                    loadAudio('audio/wu.wav', '呜')
                 ]);
             }
         }
@@ -70,24 +77,9 @@
         }
 
         function stringToSb(str) {
-            const result = Array.from(str).map(char => {
+            return Array.from(str).map(char => {
                 return char.charCodeAt(0).toString(2).padStart(16, '0');
             }).join('').replaceAll("0","啊").replaceAll("1","呜");
-
-            if (result.length > 0) {
-                document.getElementById("playButton").style.display = "inline-block";
-                document.getElementById("stopButton").style.display = "inline-block";
-            }
-            
-            return result;
-        }
-
-        function sbToString(binary) {
-            binary = binary.replace(/[^啊呜]/g, '').replaceAll("啊","0").replaceAll("呜","1");
-            let binaryArray = binary.match(/.{1,16}/g);
-            return binaryArray.map(bin => {
-                return String.fromCharCode(parseInt(bin, 2));
-            }).join('');
         }
 
         function copy(text) {
@@ -124,9 +116,6 @@
         button{
             margin-bottom: 16px;
         }
-        #playButton, #stopButton {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -144,15 +133,8 @@
                 <button onclick="encryption_result.value=stringToSb(encryption.value)">加密</button>
                 <button onclick="copy(encryption_result.value);this.focus()">复制</button>
                 <textarea id="encryption_result" placeholder="加密结果"></textarea>
-                <button id="playButton" onclick="playAudio()">播放</button>
-                <button id="stopButton" onclick="stopAudio()">停止</button>
-            </article>
-            <article>
-                <h1>解密</h1>
-                <textarea id="decrypt" placeholder="输入待解密文字，文字穿插其他字符不影响解密结果"></textarea>
-                <button onclick="decrypt_result.value=sbToString(decrypt.value)">解密</button>
-                <button onclick="copy(decrypt_result.value);this.focus()">复制</button>
-                <textarea id="decrypt_result" placeholder="解密结果"></textarea>
+                <button onclick="playAudio()">播放</button>
+                <button onclick="stopAudio()">停止</button>
             </article>
         </div>
     </main>
