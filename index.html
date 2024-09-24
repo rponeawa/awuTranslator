@@ -82,6 +82,14 @@
             }).join('').replaceAll("0","啊").replaceAll("1","呜");
         }
 
+        function sbToString(binary) {
+            binary = binary.replace(/[^啊呜]/g, '').replaceAll("啊","0").replaceAll("呜","1");
+            let binaryArray = binary.match(/.{1,16}/g);
+            return binaryArray.map(bin => {
+                return String.fromCharCode(parseInt(bin, 2));
+            }).join('');
+        }
+
         function copy(text) {
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -135,6 +143,14 @@
                 <textarea id="encryption_result" placeholder="加密结果"></textarea>
                 <button onclick="playAudio()">播放</button>
                 <button onclick="stopAudio()">停止</button>
+            </article>
+
+            <article>
+                <h1>解密</h1>
+                <textarea id="decrypt" placeholder="输入待解密文字，文字穿插其他字符不影响解密结果"></textarea>
+                <button onclick="decrypt_result.value=sbToString(decrypt.value)">解密</button>
+                <button onclick="copy(decrypt_result.value);this.focus()">复制</button>
+                <textarea id="decrypt_result" placeholder="解密结果"></textarea>
             </article>
         </div>
     </main>
